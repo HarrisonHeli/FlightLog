@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Flight Log Calculator</title>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-dim: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #0284c7;
+      --badge-bg: #e0f2fe;
+      --badge-text: #0369a1;
+      --row-zebra: #f1f5f9;
+      --geo-active: #16a34a;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0f19;
+        --card-bg: #151d30;
+        --border: #2b3853;
+        --text: #f1f5f9;
+        --text-dim: #94a3b8;
+        --primary: #38bdf8;
+        --primary-hover: #0284c7;
+        --accent: #38bdf8;
+        --badge-bg: #1e293b;
+        --badge-text: #7dd3fc;
+        --row-zebra: #101726;
+        --geo-active: #22c55e;
+      }
+    }
+
+    body.theme-light {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-dim: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #0284c7;
+      --badge-bg: #e0f2fe;
+      --badge-text: #0369a1;
+      --row-zebra: #f1f5f9;
+      --geo-active: #16a34a;
+    }
+
+    body.theme-dark {
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --border: #2b3853;
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --accent: #38bdf8;
+      --badge-bg: #1e293b;
+      --badge-text: #7dd3fc;
+      --row-zebra: #101726;
+      --geo-active: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+    }
+
+    .offset-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px 8px;
+      height: 44px;
+    }
+
+    .offset-wrap label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+
+    .offset-input {
+      width: 72px;
+      height: 34px;
+      padding: 0 4px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .meta-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-wrap label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    input, select {
+      height: 44px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      text-align: center;
+    }
+
+    .summary-item label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .summary-item .value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .summary-item .sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .entry-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .entry-card.disabled {
+      opacity: 0.55;
+    }
+
+    .entry-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inc-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .inc-checkbox {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+    }
+
+    .header-activity-wrap {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .header-activity-wrap input {
+      height: 38px;
+      font-size: 0.9rem;
+    }
+
+    .time-slot {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pin-btn {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: var(--bg);
+    }
+
+    .pin-btn.saved {
+      background: var(--badge-bg);
+      color: var(--geo-active);
+      border-color: var(--geo-active);
+    }
+
+    .computed-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      background: var(--row-zebra);
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+
+    .computed-strip span {
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 520px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #map {
+      width: 100%;
+      height: 280px;
+      background: #e2e8f0;
+    }
+
+    .modal-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dynamic Auto-fill Suggestions DataLists -->
+  <datalist id="pic-suggestions"></datalist>
+  <datalist id="sic-suggestions"></datalist>
+  <datalist id="act-suggestions"></datalist>
+
+  <div class="container">
+    <header>
+      <h1>Flight Log Calculator</h1>
+      <div class="btn-group">
+        <button id="theme-btn" onclick="cycleTheme()">Theme: Auto</button>
+        <button id="utc-btn" onclick="toggleUTC()">Time: LOC</button>
+        
+        <!-- Editable UTC Offset -->
+        <div class="offset-wrap" title="Local UTC offset in hours (e.g. 8, 9.5, -5)">
+          <label for="utc-offset-input">UTC</label>
+          <input type="number" id="utc-offset-input" class="offset-input" step="0.5" min="-14" max="14" value="8" onchange="onOffsetChange()" />
+        </div>
+
+        <button onclick="clearForm()">Reset</button>
+        <button class="primary" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </header>
+
+    <div class="meta-card">
+      <div class="input-wrap">
+        <label>Date</label>
+        <input type="date" id="meta-date" onchange="persistData()" />
+      </div>
+      <div class="input-wrap">
+        <label>Aircraft Rego</label>
+        <input type="text" id="meta-rego" placeholder="e.g. VH-XYZ" oninput="persistData()" />
+      </div>
+      <div class="input-wrap">
+        <label>Base / Location</label>
+        <input type="text" id="meta-base" placeholder="e.g. YPPH" oninput="persistData()" />
+      </div>
+      <div class="input-wrap">
+        <label>Day Start Fuel</label>
+        <input type="number" id="meta-fuel-start" step="0.1" placeholder="0" oninput="calculateAll()" />
+      </div>
+      <div class="input-wrap">
+        <label>Day Stop Fuel</label>
+        <input type="number" id="meta-fuel-stop" step="0.1" placeholder="0" oninput="calculateAll()" />
+      </div>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="summary-card">
+      <div class="summary-grid">
+        <div class="summary-item">
+          <label>Total Landings</label>
+          <div class="value" id="sum-landings">0</div>
+        </div>
+        <div class="summary-item">
+          <label>Total Loads / Drops</label>
+          <div class="value" id="sum-loads">0</div>
+        </div>
+        <div class="summary-item">
+          <label>Fuel Added</label>
+          <div class="value" id="sum-fuel-add">0</div>
+        </div>
+        <div class="summary-item">
+          <label>Total Burn (Est)</label>
+          <div class="value" id="sum-burn">0.0</div>
+          <div class="sub" id="sum-burn-rate">0.0 / flt-hr</div>
+        </div>
+        <div class="summary-item">
+          <label>Flight Time</label>
+          <div class="value" id="sum-flight-h">0.00h</div>
+          <div class="sub" id="sum-flight-hm">0h 00m</div>
+        </div>
+        <div class="summary-item">
+          <label>Engine Time</label>
+          <div class="value" id="sum-engine-h">0.00h</div>
+          <div class="sub" id="sum-engine-hm">0h 00m</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10 Entries -->
+    <div id="entries-container"></div>
+  </div>
+
+  <!-- Leaflet Map Modal -->
+  <div class="modal-overlay" id="map-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <strong id="modal-title">Edit Location</strong>
+        <button style="min-height:32px; padding:2px 8px;" onclick="closeModal()">✕</button>
+      </div>
+      <div id="map"></div>
+      <div class="modal-body">
+        <div class="input-wrap">
+          <label>Location Name (Airfield / Waypoint)</label>
+          <input type="text" id="modal-loc-name" placeholder="e.g. Broome Pad" />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div class="input-wrap">
+            <label>Latitude</label>
+            <input type="number" step="0.000001" id="modal-lat" />
+          </div>
+          <div class="input-wrap">
+            <label>Longitude</label>
+            <input type="number" step="0.000001" id="modal-lon" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="getCurrentGPSModal()">📍 Use Current GPS</button>
+        <button onclick="clearCurrentLocation()">Clear</button>
+        <button class="primary" onclick="saveModalLocation()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ROWS_COUNT = 10;
+    let isUTC = false;
+    let activePinTarget = null;
+    let leafletMap = null;
+    let mapMarker = null;
+    let cachedPosition = null;
+
+    // Detect device system offset in minutes initially
+    let currentOffsetMinutes = -new Date().getTimezoneOffset();
+    document.getElementById('utc-offset-input').value = (currentOffsetMinutes / 60);
+
+    function getOffsetMinutes() {
+      const val = parseFloat(document.getElementById('utc-offset-input').value) || 0;
+      return Math.round(val * 60);
+    }
+
+    function onOffsetChange() {
+      const newOffset = getOffsetMinutes();
+      if (isUTC) {
+        // If already looking at UTC, adjust inputs to reflect difference
+        const delta = currentOffsetMinutes - newOffset;
+        for (let i = 1; i <= ROWS_COUNT; i++) {
+          ['start', 'up', 'down', 'stop'].forEach(type => {
+            const el = document.getElementById(`${type}-${i}`);
+            if (el.value) el.value = shiftTimeString(el.value, delta);
+          });
+        }
+      }
+      currentOffsetMinutes = newOffset;
+      persistData();
+      calculateAll();
+    }
+
+    const container = document.getElementById('entries-container');
+    for (let i = 1; i <= ROWS_COUNT; i++) {
+      const card = document.createElement('div');
+      card.className = 'entry-card';
+      card.id = `entry-card-${i}`;
+      card.innerHTML = `
+        <div class="entry-header">
+          <label class="inc-label">
+            <input type="checkbox" class="inc-checkbox" id="inc-${i}" checked onchange="calculateAll()" />
+            <span>Flight #${i}</span>
+          </label>
+          <div class="header-activity-wrap">
+            <input type="text" id="act-${i}" list="act-suggestions" placeholder="Activity (e.g. Charter / Fire)" oninput="handleMetadataInput()" />
+          </div>
+          ${i > 1 ? `<button onclick="copyDown(${i})" style="min-height:38px; padding:4px 10px;">↓ Copy Prev</button>` : ''}
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+          <div class="input-wrap">
+            <label>PIC</label>
+            <input type="text" id="pic-${i}" list="pic-suggestions" placeholder="Pilot In Command" oninput="handleMetadataInput()" />
+          </div>
+          <div class="input-wrap">
+            <label>SIC</label>
+            <input type="text" id="sic-${i}" list="sic-suggestions" placeholder="Second In Command" oninput="handleMetadataInput()" />
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:10px;">
+          <div class="input-wrap">
+            <label>Landings</label>
+            <input type="number" id="land-${i}" min="0" value="0" oninput="calculateAll()" />
+          </div>
+          <div class="input-wrap">
+            <label>Loads / Drops</label>
+            <input type="number" id="loads-${i}" min="0" value="0" oninput="calculateAll()" />
+          </div>
+          <div class="input-wrap">
+            <label>Fuel Added</label>
+            <input type="number" id="fuel-add-${i}" min="0" step="0.1" value="0" oninput="calculateAll()" />
+          </div>
+          <div class="input-wrap">
+            <label>Stop Fuel</label>
+            <input type="number" id="fuel-stop-${i}" min="0" step="0.1" placeholder="0" oninput="calculateAll()" />
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px;">
+          <div class="input-wrap">
+            <label>Start <span class="lbl-mode"></span></label>
+            <div class="time-slot">
+              <input type="time" id="start-${i}" onchange="calculateAll()" />
+              <button class="pin-btn" id="pin-start-${i}" onclick="openMapModal(${i}, 'start')" title="Start GPS Location">📍</button>
+            </div>
+          </div>
+          <div class="input-wrap">
+            <label>Up <span class="lbl-mode"></span></label>
+            <input type="time" id="up-${i}" onchange="calculateAll()" />
+          </div>
+          <div class="input-wrap">
+            <label>Down <span class="lbl-mode"></span></label>
+            <input type="time" id="down-${i}" onchange="calculateAll()" />
+          </div>
+          <div class="input-wrap">
+            <label>Stop <span class="lbl-mode"></span></label>
+            <div class="time-slot">
+              <input type="time" id="stop-${i}" onchange="calculateAll()" />
+              <button class="pin-btn" id="pin-stop-${i}" onclick="openMapModal(${i}, 'stop')" title="Stop GPS Location">📍</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="computed-strip">
+          <div>Flight Time: <span id="res-flight-${i}">-</span></div>
+          <div>Engine Time: <span id="res-engine-${i}">-</span></div>
+          <div>Burn: <span id="res-burn-${i}">-</span></div>
+          <div>Burn Rate: <span id="res-burn-rate-${i}">-</span></div>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    let geoData = {};
+
+    function updateDatalists() {
+      const picSet = new Set();
+      const sicSet = new Set();
+      const actSet = new Set();
+
+      for (let i = 1; i <= ROWS_COUNT; i++) {
+        const p = document.getElementById(`pic-${i}`).value.trim();
+        const s = document.getElementById(`sic-${i}`).value.trim();
+        const a = document.getElementById(`act-${i}`).value.trim();
+
+        if (p) picSet.add(p);
+        if (s) picSet.add(s);
+        if (a) actSet.add(a);
+      }
+
+      const populate = (listId, set) => {
+        const dl = document.getElementById(listId);
+        dl.innerHTML = '';
+        set.forEach(val => {
+          const opt = document.createElement('option');
+          opt.value = val;
+          dl.appendChild(opt);
+        });
+      };
+
+      populate('pic-suggestions', picSet);
+      populate('sic-suggestions', sicSet);
+      populate('act-suggestions', actSet);
+    }
+
+    function handleMetadataInput() {
+      updateDatalists();
+      persistData();
+    }
+
+    function timeToMinutes(t) {
+      if (!t) return null;
+      const [h, m] = t.split(':').map(Number);
+      return (h * 60) + m;
+    }
+
+    function minutesToHM(mins) {
+      const h = Math.floor(mins / 60);
+      const m = Math.round(mins % 60);
+      return `${h}h ${String(m).padStart(2, '0')}m`;
+    }
+
+    function calculateDelta(startTime, endTime) {
+      const s = timeToMinutes(startTime);
+      const e = timeToMinutes(endTime);
+      if (s === null || e === null) return null;
+      let diff = e - s;
+      if (diff < 0) diff += 24 * 60;
+      return diff;
+    }
+
+    function shiftTimeString(timeStr, deltaMinutes) {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':').map(Number);
+      let total = (h * 60) + m + deltaMinutes;
+      total = (total % 1440 + 1440) % 1440;
+      const newH = String(Math.floor(total / 60)).padStart(2, '0');
+      const newM = String(total % 60).padStart(2, '0');
+      return `${newH}:${newM}`;
+    }
+
+    function toggleUTC() {
+      const targetIsUTC = !isUTC;
+      const offset = getOffsetMinutes();
+      const shiftDelta = targetIsUTC ? -offset : offset;
+
+      for (let i = 1; i <= ROWS_COUNT; i++) {
+        ['start', 'up', 'down', 'stop'].forEach(type => {
+          const el = document.getElementById(`${type}-${i}`);
+          if (el.value) {
+            el.value = shiftTimeString(el.value, shiftDelta);
+          }
+        });
+      }
+
+      isUTC = targetIsUTC;
+      document.getElementById('utc-btn').textContent = `Time: ${isUTC ? 'UTC' : 'LOC'}`;
+      document.querySelectorAll('.lbl-mode').forEach(span => {
+        span.textContent = isUTC ? '(UTC)' : '';
+      });
+
+      calculateAll();
+    }
+
+    function calculateAll() {
+      let totalLandings = 0;
+      let totalLoads = 0;
+      let totalFuelAdd = 0;
+      let totalFlightMins = 0;
+      let totalEngineMins = 0;
+      let calculatedTotalBurn = 0;
+
+      const dayStartFuel = parseFloat(document.getElementById('meta-fuel-start').value) || 0;
+      const dayStopFuelInput = document.getElementById('meta-fuel-stop').value;
+      let previousStopFuel = dayStartFuel;
+
+      for (let i = 1; i <= ROWS_COUNT; i++) {
+        const inc = document.getElementById(`inc-${i}`).checked;
+        const card = document.getElementById(`entry-card-${i}`);
+        card.classList.toggle('disabled', !inc);
+
+        const landings = parseInt(document.getElementById(`land-${i}`).value) || 0;
+        const loads = parseInt(document.getElementById(`loads-${i}`).value) || 0;
+        const fuelAdd = parseFloat(document.getElementById(`fuel-add-${i}`).value) || 0;
+        const stopFuelVal = document.getElementById(`fuel-stop-${i}`).value;
+
+        const startT = document.getElementById(`start-${i}`).value;
+        const upT = document.getElementById(`up-${i}`).value;
+        const downT = document.getElementById(`down-${i}`).value;
+        const stopT = document.getElementById(`stop-${i}`).value;
+
+        const flightMins = calculateDelta(upT, downT);
+        const engineMins = calculateDelta(startT, stopT);
+
+        document.getElementById(`res-flight-${i}`).textContent = flightMins !== null 
+          ? `${(flightMins / 60).toFixed(2)}h (${minutesToHM(flightMins)})` : '-';
+        document.getElementById(`res-engine-${i}`).textContent = engineMins !== null 
+          ? `${(engineMins / 60).toFixed(2)}h (${minutesToHM(engineMins)})` : '-';
+
+        let entryBurn = null;
+        if (stopFuelVal !== '') {
+          const currentStopFuel = parseFloat(stopFuelVal);
+          entryBurn = (previousStopFuel + fuelAdd) - currentStopFuel;
+          previousStopFuel = currentStopFuel;
+        }
+
+        if (entryBurn !== null && entryBurn >= 0) {
+          document.getElementById(`res-burn-${i}`).textContent = `${entryBurn.toFixed(1)}`;
+          if (flightMins && flightMins > 0) {
+            const flightHours = flightMins / 60;
+            const rate = entryBurn / flightHours;
+            document.getElementById(`res-burn-rate-${i}`).textContent = `${rate.toFixed(1)} / hr`;
+          } else {
+            document.getElementById(`res-burn-rate-${i}`).textContent = '-';
+          }
+        } else {
+          document.getElementById(`res-burn-${i}`).textContent = '-';
+          document.getElementById(`res-burn-rate-${i}`).textContent = '-';
+        }
+
+        if (inc) {
+          totalLandings += landings;
+          totalLoads += loads;
+          totalFuelAdd += fuelAdd;
+          if (flightMins !== null) totalFlightMins += flightMins;
+          if (engineMins !== null) totalEngineMins += engineMins;
+          if (entryBurn !== null && entryBurn >= 0) calculatedTotalBurn += entryBurn;
+        }
+      }
+
+      document.getElementById('sum-landings').textContent = totalLandings;
+      document.getElementById('sum-loads').textContent = totalLoads;
+      document.getElementById('sum-fuel-add').textContent = totalFuelAdd.toFixed(1);
+
+      const flightHoursDec = (totalFlightMins / 60);
+      const engineHoursDec = (totalEngineMins / 60);
+
+      document.getElementById('sum-flight-h').textContent = `${flightHoursDec.toFixed(2)}h`;
+      document.getElementById('sum-flight-hm').textContent = minutesToHM(totalFlightMins);
+
+      document.getElementById('sum-engine-h').textContent = `${engineHoursDec.toFixed(2)}h`;
+      document.getElementById('sum-engine-hm').textContent = minutesToHM(totalEngineMins);
+
+      let finalBurn = calculatedTotalBurn;
+      if (dayStopFuelInput !== '') {
+        const dayStop = parseFloat(dayStopFuelInput) || 0;
+        finalBurn = (dayStartFuel + totalFuelAdd) - dayStop;
+      }
+
+      document.getElementById('sum-burn').textContent = finalBurn > 0 ? finalBurn.toFixed(1) : '0.0';
+
+      if (finalBurn > 0 && flightHoursDec > 0) {
+        document.getElementById('sum-burn-rate').textContent = `${(finalBurn / flightHoursDec).toFixed(1)} / flt-hr`;
+      } else {
+        document.getElementById('sum-burn-rate').textContent = '0.0 / flt-hr';
+      }
+
+      updateDatalists();
+      persistData();
+    }
+
+    function updatePinBadge(idx, type) {
+      const btn = document.getElementById(`pin-${type}-${idx}`);
+      if (!btn) return;
+      if (geoData[`${idx}_${type}`]) {
+        btn.classList.add('saved');
+        btn.innerHTML = '●';
+      } else {
+        btn.classList.remove('saved');
+        btn.innerHTML = '📍';
+      }
+    }
+
+    function copyDown(idx) {
+      if (idx <= 1) return;
+      const prev = idx - 1;
+      ['pic', 'sic', 'act'].forEach(field => {
+        document.getElementById(`${field}-${idx}`).value = document.getElementById(`${field}-${prev}`).value;
+      });
+      calculateAll();
+    }
+
+    function initMap() {
+      if (leafletMap) return;
+      try {
+        leafletMap = L.map('map').setView([-25.0, 133.0], 4);
+        
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri',
+          maxZoom: 18
+        }).addTo(leafletMap);
+
+        leafletMap.on('click', function(e) {
+          setMapCoordinates(e.latlng.lat, e.latlng.lng);
+        });
+      } catch (err) {
+        console.warn('Map service unavailable:', err);
+      }
+    }
+
+    function setMapCoordinates(lat, lon) {
+      document.getElementById('modal-lat').value = Number(lat).toFixed(6);
+      document.getElementById('modal-lon').value = Number(lon).toFixed(6);
+      if (leafletMap) {
+        if (!mapMarker) {
+          mapMarker = L.marker([lat, lon], { draggable: true }).addTo(leafletMap);
+          mapMarker.on('dragend', function (e) {
+            const pos = e.target.getLatLng();
+            setMapCoordinates(pos.lat, pos.lng);
+          });
+        } else {
+          mapMarker.setLatLng([lat, lon]);
+        }
+      }
+    }
+
+    function openMapModal(idx, type) {
+      activePinTarget = { idx, type };
+      document.getElementById('modal-title').textContent = `Flight #${idx} - ${type.toUpperCase()} Location`;
+      document.getElementById('map-modal').style.display = 'flex';
+
+      initMap();
+
+      const existing = geoData[`${idx}_${type}`];
+      if (existing) {
+        document.getElementById('modal-lat').value = existing.lat;
+        document.getElementById('modal-lon').value = existing.lon;
+        document.getElementById('modal-loc-name').value = existing.name || '';
+        if (leafletMap) {
+          leafletMap.setView([existing.lat, existing.lon], 13);
+          setMapCoordinates(existing.lat, existing.lon);
+        }
+      } else {
+        document.getElementById('modal-lat').value = '';
+        document.getElementById('modal-lon').value = '';
+        document.getElementById('modal-loc-name').value = '';
+        if (mapMarker && leafletMap) {
+          leafletMap.removeLayer(mapMarker);
+          mapMarker = null;
+        }
+        
+        if (cachedPosition) {
+          setMapCoordinates(cachedPosition.lat, cachedPosition.lon);
+          if (leafletMap) leafletMap.setView([cachedPosition.lat, cachedPosition.lon], 13);
+        }
+      }
+
+      setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 200);
+    }
+
+    function closeModal() {
+      document.getElementById('map-modal').style.display = 'none';
+      activePinTarget = null;
+    }
+
+    function getCurrentGPSModal() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          cachedPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          setMapCoordinates(pos.coords.latitude, pos.coords.longitude);
+          if (leafletMap) leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 14);
+        }, (err) => {
+          alert('GPS unavailable or permission denied. Coordinates can still be typed manually.');
+        }, { enableHighAccuracy: true, timeout: 8000 });
+      }
+    }
+
+    function saveModalLocation() {
+      if (!activePinTarget) return;
+      const { idx, type } = activePinTarget;
+      const lat = parseFloat(document.getElementById('modal-lat').value);
+      const lon = parseFloat(document.getElementById('modal-lon').value);
+      const name = document.getElementById('modal-loc-name').value.trim();
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        geoData[`${idx}_${type}`] = { lat, lon, name };
+      } else {
+        delete geoData[`${idx}_${type}`];
+      }
+
+      updatePinBadge(idx, type);
+      persistData();
+      closeModal();
+    }
+
+    function clearCurrentLocation() {
+      if (!activePinTarget) return;
+      const { idx, type } = activePinTarget;
+      delete geoData[`${idx}_${type}`];
+      updatePinBadge(idx, type);
+      persistData();
+      closeModal();
+    }
+
+    function cycleTheme() {
+      const b = document.body;
+      const btn = document.getElementById('theme-btn');
+      if (!b.classList.contains('theme-light') && !b.classList.contains('theme-dark')) {
+        b.classList.add('theme-light');
+        btn.textContent = 'Theme: Light';
+      } else if (b.classList.contains('theme-light')) {
+        b.classList.remove('theme-light');
+        b.classList.add('theme-dark');
+        btn.textContent = 'Theme: Dark';
+      } else {
+        b.classList.remove('theme-dark');
+        btn.textContent = 'Theme: Auto';
+      }
+      persistData();
+    }
+
+    function persistData() {
+      const state = {
+        meta: {
+          date: document.getElementById('meta-date').value,
+          rego: document.getElementById('meta-rego').value,
+          base: document.getElementById('meta-base').value,
+          fuelStart: document.getElementById('meta-fuel-start').value,
+          fuelStop: document.getElementById('meta-fuel-stop').value,
+        },
+        theme: document.getElementById('theme-btn').textContent,
+        isUTC,
+        utcOffsetHours: document.getElementById('utc-offset-input').value,
+        geoData,
+        entries: []
+      };
+
+      for (let i = 1; i <= ROWS_COUNT; i++) {
+        state.entries.push({
+          inc: document.getElementById(`inc-${i}`).checked,
+          pic: document.getElementById(`pic-${i}`).value,
+          sic: document.getElementById(`sic-${i}`).value,
+          act: document.getElementById(`act-${i}`).value,
+          land: document.getElementById(`land-${i}`).value,
+          loads: document.getElementById(`loads-${i}`).value,
+          fuelAdd: document.getElementById(`fuel-add-${i}`).value,
+          fuelStop: document.getElementById(`fuel-stop-${i}`).value,
+          start: document.getElementById(`start-${i}`).value,
+          up: document.getElementById(`up-${i}`).value,
+          down: document.getElementById(`down-${i}`).value,
+          stop: document.getElementById(`stop-${i}`).value,
+        });
+      }
+
+      const str = JSON.stringify(state);
+      try { localStorage.setItem('flight_log_state', str); } catch(e){}
+      document.cookie = `flight_log_state=${encodeURIComponent(str)};max-age=31536000;path=/;SameSite=Lax`;
+    }
+
+    function loadState() {
+      let str = null;
+      try { str = localStorage.getItem('flight_log_state'); } catch(e){}
+      if (!str) {
+        const m = document.cookie.match(/flight_log_state=([^;]+)/);
+        if (m) str = decodeURIComponent(m[1]);
+      }
+      if (!str) return;
+
+      try {
+        const state = JSON.parse(str);
+        if (state.meta) {
+          document.getElementById('meta-date').value = state.meta.date || '';
+          document.getElementById('meta-rego').value = state.meta.rego || '';
+          document.getElementById('meta-base').value = state.meta.base || '';
+          document.getElementById('meta-fuel-start').value = state.meta.fuelStart || '';
+          document.getElementById('meta-fuel-stop').value = state.meta.fuelStop || '';
+        }
+        if (state.utcOffsetHours !== undefined) {
+          document.getElementById('utc-offset-input').value = state.utcOffsetHours;
+          currentOffsetMinutes = getOffsetMinutes();
+        }
+        if (state.isUTC !== undefined) {
+          isUTC = state.isUTC;
+          document.getElementById('utc-btn').textContent = `Time: ${isUTC ? 'UTC' : 'LOC'}`;
+          document.querySelectorAll('.lbl-mode').forEach(span => {
+            span.textContent = isUTC ? '(UTC)' : '';
+          });
+        }
+        if (state.geoData) {
+          geoData = state.geoData;
+        }
+
+        if (state.entries) {
+          state.entries.forEach((e, idx) => {
+            const i = idx + 1;
+            if (i > ROWS_COUNT) return;
+            document.getElementById(`inc-${i}`).checked = e.inc !== false;
+            document.getElementById(`pic-${i}`).value = e.pic || '';
+            document.getElementById(`sic-${i}`).value = e.sic || '';
+            document.getElementById(`act-${i}`).value = e.act || '';
+            document.getElementById(`land-${i}`).value = e.land || 0;
+            document.getElementById(`loads-${i}`).value = e.loads || 0;
+            document.getElementById(`fuel-add-${i}`).value = e.fuelAdd || 0;
+            document.getElementById(`fuel-stop-${i}`).value = e.fuelStop || '';
+            document.getElementById(`start-${i}`).value = e.start || '';
+            document.getElementById(`up-${i}`).value = e.up || '';
+            document.getElementById(`down-${i}`).value = e.down || '';
+            document.getElementById(`stop-${i}`).value = e.stop || '';
+
+            ['start', 'stop'].forEach(t => updatePinBadge(i, t));
+          });
+        }
+        calculateAll();
+      } catch(err) {
+        console.error('Error restoring session:', err);
+      }
+    }
+
+    function clearForm() {
+      if (confirm('Clear all entries and stored data?')) {
+        document.querySelectorAll('input').forEach(i => {
+          if (i.type === 'checkbox') i.checked = true;
+          else if (i.id === 'utc-offset-input') return;
+          else if (i.type === 'number') i.value = (i.id.includes('land') || i.id.includes('loads') || i.id.includes('fuel-add')) ? '0' : '';
+          else i.value = '';
+        });
+        geoData = {};
+        for (let i = 1; i <= ROWS_COUNT; i++) {
+          ['start', 'stop'].forEach(t => updatePinBadge(i, t));
+        }
+        calculateAll();
+      }
+    }
+
+    function exportCSV() {
+      const rego = document.getElementById('meta-rego').value || 'UNSPECIFIED';
+      const date = document.getElementById('meta-date').value || 'NO_DATE';
+      const base = document.getElementById('meta-base').value || '-';
+      const dayStartFuel = document.getElementById('meta-fuel-start').value || '0';
+      const dayStopFuel = document.getElementById('meta-fuel-stop').value || '0';
+      const flightH = document.getElementById('sum-flight-h').textContent;
+      const engineH = document.getElementById('sum-engine-h').textContent;
+      const landings = document.getElementById('sum-landings').textContent;
+      const loads = document.getElementById('sum-loads').textContent;
+      const burn = document.getElementById('sum-burn').textContent;
+      const burnRate = document.getElementById('sum-burn-rate').textContent;
+      const offsetVal = document.getElementById('utc-offset-input').value;
+
+      let csv = `# ========================================================\n`;
+      csv += `# FLIGHT LOG CALCULATOR SUMMARY\n`;
+      csv += `# Rego: ${rego} | Date: ${date} | Base: ${base} | Mode: ${isUTC ? 'UTC' : 'LOCAL'} (UTC${offsetVal >= 0 ? '+' : ''}${offsetVal})\n`;
+      csv += `# Day Start Fuel: ${dayStartFuel} | Day Stop Fuel: ${dayStopFuel}\n`;
+      csv += `# Total Burn: ${burn} | Avg Flight Burn Rate: ${burnRate}\n`;
+      csv += `# Total Flight: ${flightH} | Total Engine: ${engineH}\n`;
+      csv += `# Landings: ${landings} | Loads/Drops: ${loads}\n`;
+      csv += `# ========================================================\n`;
+
+      csv += `Flight,Included,Activity,PIC,SIC,Landings,Loads,Fuel_Added,Stop_Fuel,Start_Time,Start_Lat,Start_Lon,Start_Loc,Up_Time,Down_Time,Stop_Time,Stop_Lat,Stop_Lon,Stop_Loc,Flight_Hours,Engine_Hours,Burn,Burn_Rate_Flight\n`;
+
+      for (let i = 1; i <= ROWS_COUNT; i++) {
+        const inc = document.getElementById(`inc-${i}`).checked ? 'YES' : 'NO';
+        const act = `"${document.getElementById(`act-${i}`).value}"`;
+        const pic = `"${document.getElementById(`pic-${i}`).value}"`;
+        const sic = `"${document.getElementById(`sic-${i}`).value}"`;
+        const land = document.getElementById(`land-${i}`).value;
+        const loads = document.getElementById(`loads-${i}`).value;
+        const fAdd = document.getElementById(`fuel-add-${i}`).value;
+        const fStop = document.getElementById(`fuel-stop-${i}`).value;
+
+        const sT = document.getElementById(`start-${i}`).value;
+        const uT = document.getElementById(`up-${i}`).value;
+        const dT = document.getElementById(`down-${i}`).value;
+        const pT = document.getElementById(`stop-${i}`).value;
+
+        const sG = geoData[`${i}_start`] || {};
+        const pG = geoData[`${i}_stop`] || {};
+
+        const flH = document.getElementById(`res-flight-${i}`).textContent.replace('h', '').split(' ')[0];
+        const enH = document.getElementById(`res-engine-${i}`).textContent.replace('h', '').split(' ')[0];
+        const rowBurn = document.getElementById(`res-burn-${i}`).textContent;
+        const rowBurnRate = document.getElementById(`res-burn-rate-${i}`).textContent.replace(' / hr', '');
+
+        csv += `${i},${inc},${act},${pic},${sic},${land},${loads},${fAdd},${fStop},` +
+               `${sT},${sG.lat || ''},${sG.lon || ''},"${sG.name || ''}",` +
+               `${uT},${dT},` +
+               `${pT},${pG.lat || ''},${pG.lon || ''},"${pG.name || ''}",` +
+               `${flH},${enH},${rowBurn},${rowBurnRate}\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `FlightLog_${rego}_${date}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    document.getElementById('meta-date').value = new Date().toISOString().slice(0, 10);
+    loadState();
+  </script>
+</body>
+</html>
